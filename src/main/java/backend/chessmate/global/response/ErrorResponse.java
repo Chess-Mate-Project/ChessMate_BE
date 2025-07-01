@@ -1,4 +1,4 @@
-package commitcapstone.commit.common.response;
+package backend.chessmate.global.response;
 
 import lombok.Getter;
 

@@ -1,4 +1,4 @@
-package commitcapstone.commit.common.code;
+package backend.chessmate.global.code;
 
 import org.springframework.http.HttpStatus;
 
