@@ -18,3 +18,5 @@ lichess:
   base-url: https://lichess.org
   client-id: abc123def456
   redirect-url: http://localhost:3000/callback
+  ttl:
+    account: 3600 # 유저 정보 캐시 1시간

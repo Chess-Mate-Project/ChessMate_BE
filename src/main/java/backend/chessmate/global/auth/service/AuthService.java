@@ -34,6 +34,10 @@ public class AuthService {
     @Value("${lichess.redirect-url}")
     private String redirectUrl;
 
+    @Value("${lichess.ttl.account")
+    private long acctountTTL;
+
+    private final String REDIS_KEY_PREFIX = "lichessId:";
 
     public void login(OAuthValueRequest request) {
         OAuthAccessTokenResponse oauthToken = getOAuthAccessToken(request);
@@ -43,8 +47,8 @@ public class AuthService {
         redisService.save(userAccount.getId(), oauthToken.getAccessToken(), oauthToken.getExpiresIn());
 
 
-        String userAccountJson = objectMapper.writeValueAsString(userAccount);
-        redisService.save(userAccount.getId(), userAccountJson, );
+
+        redisService.save(REDIS_KEY_PREFIX + userAccount.getId(), userAccount, acctountTTL);
 
         UserEmailResponse userEmail = getUserEmail(oauthToken.getAccessToken());
 
