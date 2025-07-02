@@ -1,10 +1,8 @@
-package backend.chessmate.global.code;
+package backend.chessmate.global.common.code;
 
 import org.springframework.http.HttpStatus;
 
-public interface ErrorCode {
-
+public interface SuccessCode {
     HttpStatus getHttpStatus();
     String getMessage();
-
 }

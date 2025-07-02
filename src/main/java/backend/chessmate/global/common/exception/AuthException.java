@@ -1,6 +1,6 @@
-package backend.chessmate.global.exception;
+package backend.chessmate.global.common.exception;
 
-import backend.chessmate.global.code.ErrorCode;
+import backend.chessmate.global.common.code.ErrorCode;
 import lombok.Getter;
 
 @Getter
