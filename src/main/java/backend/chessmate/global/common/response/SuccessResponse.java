@@ -1,4 +1,4 @@
-package backend.chessmate.global.response;
+package backend.chessmate.global.common.response;
 
 import lombok.Getter;
 
