@@ -1,14 +1,15 @@
 package backend.chessmate.global.auth.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Getter
-@Setter
 @NoArgsConstructor
 public class OAuthValueRequest {
+    @Schema(description = "OAuth 인증 코드", example = "abc123")
     private String code;
-    private String codeVerifier;
 
+    @Schema(description = "PKCE code verifier", example = "xyz456")
+    private String codeVerifier;
 }
