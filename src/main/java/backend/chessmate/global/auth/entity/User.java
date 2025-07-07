@@ -34,11 +34,16 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
     @PrePersist //새롭게 알게된 개념
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
         this.profile = 0; // 기본 프로필 이미지
         this.banner = 0; // 기본 배너 이미지
+        this.role = Role.USER; // 기본 역할은 USER로 설정
     }
 
 

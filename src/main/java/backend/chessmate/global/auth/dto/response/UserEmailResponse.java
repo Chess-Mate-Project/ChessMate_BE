@@ -1,4 +1,4 @@
-package backend.chessmate.global.auth.dto;
+package backend.chessmate.global.auth.dto.response;
 
 import lombok.Data;
 

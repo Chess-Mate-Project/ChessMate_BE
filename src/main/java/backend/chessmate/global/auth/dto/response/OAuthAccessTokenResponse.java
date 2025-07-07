@@ -1,4 +1,4 @@
-package backend.chessmate.global.auth.dto;
+package backend.chessmate.global.auth.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

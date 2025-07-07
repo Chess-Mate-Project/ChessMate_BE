@@ -1,8 +1,10 @@
 package backend.chessmate.global.auth.controller;
 
-import backend.chessmate.global.auth.dto.OAuthValueRequest;
+import backend.chessmate.global.auth.dto.request.OAuthValueRequest;
+import backend.chessmate.global.auth.dto.response.LoginResponse;
 import backend.chessmate.global.auth.service.AuthService;
 import backend.chessmate.global.common.response.SuccessResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,11 +20,11 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<SuccessResponse<?>> login(@RequestBody OAuthValueRequest request) {
+    public ResponseEntity<SuccessResponse<LoginResponse>> login(@RequestBody OAuthValueRequest req, HttpServletResponse res) {
 
-        authService.login(request);
+        LoginResponse response = authService.login(req, res);
         return ResponseEntity.ok(
-            new SuccessResponse<>("로그인 성공", null)
+            new SuccessResponse<>("로그인 성공", response)
         );
     }
 }
