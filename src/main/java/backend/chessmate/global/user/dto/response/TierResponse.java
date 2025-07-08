@@ -1,4 +1,4 @@
-package backend.chessmate.global.user.dto;
+package backend.chessmate.global.user.dto.response;
 
 import backend.chessmate.global.user.entity.SubTierType;
 import backend.chessmate.global.user.entity.TierType;
@@ -9,9 +9,9 @@ import lombok.Setter;
 @Setter
 @Getter
 @AllArgsConstructor
-public class TierResult {
+public class TierResponse {
     private TierType tier;
-    private SubTierType level;
+    private SubTierType subTier;
     private int rating;
 
 }

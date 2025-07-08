@@ -5,6 +5,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+      key:
+        account_key: LICHESSA_ACCOUNT
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/chess_mate?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
@@ -22,10 +24,10 @@ spring:
   jwt:
     access-token:
         secret: chessMateGbswProjectAccessTokenSecret
-        expiration: 3600 # 1 시간
+        expiration: 36000000000000 # 1 시간
     refresh-token:
         secret: chessMateGbswProjectRefreshTokenSecret
-        expiration: 604800 # 7 일
+        expiration: 6048000000000 # 7 일
 
 application:
   name: ChessMate

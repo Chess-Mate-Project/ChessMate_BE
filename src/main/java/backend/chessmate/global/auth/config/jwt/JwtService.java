@@ -91,7 +91,9 @@ public class JwtService {
 
     // 3) Access Token 검증
     public boolean validateAccessToken(String t) {
-        return util.getTokenStatus(t, ACCESS_KEY) == TokenStatus.AUTHENTICATED;
+        boolean result = util.getTokenStatus(t, ACCESS_KEY) == TokenStatus.AUTHENTICATED;
+        System.out.println("[JwtService] validateAccessToken: token=" + util.getTokenStatus(t, ACCESS_KEY) + ", result=" + result);
+        return result;
     }
 
     // 4) Refresh Token 검증 (서명 + Redis 일치 여부)
