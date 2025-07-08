@@ -8,6 +8,7 @@ import backend.chessmate.global.common.code.UserErrorCode;
 import backend.chessmate.global.common.exception.UserException;
 import backend.chessmate.global.config.RedisService;
 import backend.chessmate.global.user.dto.response.TierResponse;
+import backend.chessmate.global.user.dto.response.TierResult;
 import backend.chessmate.global.user.entity.GameType;
 import backend.chessmate.global.user.utils.LichessUtil;
 import backend.chessmate.global.user.utils.TierUtil;
@@ -39,14 +40,26 @@ public class UserService {
         //이미 캐싱 되어있으므로 레디스 내에서 조회한다.
         UserAccountResponse account = redisService.get(REDIS_ACCOUNT_KEY + user.getLichessId(), UserAccountResponse.class);
 
-        return switch (gameType) {
-            case RAPID -> tierUtil.calculateTier(account.getPerfs().getRapid().getRating());
-            case BLITZ -> tierUtil.calculateTier(account.getPerfs().getBlitz().getRating());
-            case BULLET -> tierUtil.calculateTier(account.getPerfs().getBullet().getRating());
-            case CLASSICAL -> tierUtil.calculateTier(account.getPerfs().getClassical().getRating());
-            default -> throw new UserException(UserErrorCode.NOT_SUPPORT_GAME_TYPE); //방어코드~~~ 리퀘스트 @Valid로 검증필요함 아마도
-        };
+        int rating = getRatingByGameType(account, gameType);
+        TierResult result = tierUtil.calculateTier(rating);
 
+
+        return TierResponse.builder()
+                .userName(user.getLichessId())
+                .gameType(gameType)
+                .result(result)
+                .build();
+
+    }
+
+    private int getRatingByGameType(UserAccountResponse account, GameType gameType) {
+        return switch (gameType) {
+            case RAPID -> account.getPerfs().getRapid().getRating();
+            case BLITZ -> account.getPerfs().getBlitz().getRating();
+            case BULLET -> account.getPerfs().getBullet().getRating();
+            case CLASSICAL -> account.getPerfs().getClassical().getRating();
+            default -> throw new UserException(UserErrorCode.NOT_SUPPORT_GAME_TYPE);
+        };
     }
 
 }
