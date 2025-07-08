@@ -1,6 +1,6 @@
 package backend.chessmate.global.user.entity;
 
-public enum gameType {
+public enum GameType {
     BLITZ,
     BULLET,
     RAPID,

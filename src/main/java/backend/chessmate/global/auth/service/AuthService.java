@@ -1,9 +1,10 @@
 package backend.chessmate.global.auth.service;
 
+
 import backend.chessmate.global.auth.config.jwt.JwtService;
+import backend.chessmate.global.auth.dto.request.OAuthValueRequest;
 import backend.chessmate.global.auth.dto.response.LoginResponse;
 import backend.chessmate.global.auth.dto.response.OAuthAccessTokenResponse;
-import backend.chessmate.global.auth.dto.request.OAuthValueRequest;
 import backend.chessmate.global.auth.dto.response.UserAccountResponse;
 import backend.chessmate.global.auth.entity.Role;
 import backend.chessmate.global.auth.entity.User;
@@ -11,7 +12,7 @@ import backend.chessmate.global.auth.repository.UserRepository;
 import backend.chessmate.global.common.code.AuthErrorCode;
 import backend.chessmate.global.common.exception.AuthException;
 import backend.chessmate.global.config.RedisService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import backend.chessmate.global.user.utils.LichessUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -31,6 +31,7 @@ public class AuthService {
     private final RedisService redisService;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final LichessUtil lichessutil;
 
     @Value("${lichess.base-url}")
     private String baseUrl;
@@ -41,23 +42,14 @@ public class AuthService {
     @Value("${lichess.redirect-url}")
     private String redirectUrl;
 
-    @Value("${lichess.ttl.account}")
-    private long acctountTTL;
-
-    private final String REDIS_KEY_PREFIX = "lichessId:";
 
     public LoginResponse login(OAuthValueRequest request, HttpServletResponse res) {
         OAuthAccessTokenResponse oauthToken = getOAuthAccessToken(request);
 
         // 유저의 OAuthAccessToken을 Redis에 저장
-        UserAccountResponse userAccount = getUserAccount(oauthToken.getAccessToken());
+        UserAccountResponse userAccount = lichessutil.getUserAccount(oauthToken.getAccessToken());
         redisService.save(userAccount.getId(), oauthToken.getAccessToken(), oauthToken.getExpiresIn());
 
-
-
-        redisService.save(REDIS_KEY_PREFIX + userAccount.getId(), userAccount, acctountTTL);
-
-//        UserEmailResponse userEmail = getUserEmail(oauthToken.getAccessToken()); // 이메일이 필요한가?
 
         User user = User.builder()
                 .lichessId(userAccount.getId())
@@ -112,36 +104,5 @@ public class AuthService {
         }
 
 
-    }
-
-//    public UserEmailResponse getUserEmail(String token) {
-//        WebClient webClient = WebClient.builder()
-//                .baseUrl(baseUrl)
-//                .build();
-//
-//        return webClient.get()
-//                .uri("/api/account/email")
-//                .headers(headers -> headers.setBearerAuth(token))
-//                .retrieve()
-//                .bodyToMono(UserEmailResponse.class)
-//                .block(); // 동기 방식 수정 필요함
-//    }
-
-    public UserAccountResponse getUserAccount(String token) {
-        try {
-            WebClient webClient = WebClient.builder()
-                    .baseUrl(baseUrl)
-                    .build();
-
-            return webClient.get()
-                    .uri("/api/account")
-                    .headers(headers -> headers.setBearerAuth(token))
-                    .retrieve()
-                    .bodyToMono(UserAccountResponse.class)
-                    .block(); // 동기 방식 수정 필요함
-        } catch (Exception e) {
-            log.error("UserAccount를 받아오는 과정에서 생긴 오류: {}", e.getMessage());
-            throw new AuthException(AuthErrorCode.FAILD_GET_USER_ACCOUNT);
-        }
     }
 }
