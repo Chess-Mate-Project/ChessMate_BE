@@ -11,13 +11,13 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class UserPerfScheduler {
+public class UserYearGamesScheduler {
 
     private final LichessUtil lichessUtil;
     private final UserRepository userRepository;
 
 
-    public UserPerfScheduler(LichessUtil lichessUtil, UserRepository userRepository) {
+    public UserYearGamesScheduler(LichessUtil lichessUtil, UserRepository userRepository) {
         this.lichessUtil = lichessUtil;
         this.userRepository = userRepository;
     }
@@ -32,7 +32,7 @@ public class UserPerfScheduler {
                 log.info("동기처리 확인" + user.getName());
             } catch (Exception e) {
                 // 예외 처리 로직 (예: 로그 기록)
-                System.err.println("Error fetching user account for " + user.getLichessId() + ": " + e.getMessage());
+                System.err.println("유저 게임 기록 가져오는 도중 오류 발생 " + user.getLichessId() + ": " + e.getMessage());
             }
         }
 

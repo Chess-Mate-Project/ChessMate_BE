@@ -14,4 +14,7 @@ public class UserInfoResponse {
     private BannerType banner;
     private int profile; //일단 정수타입
     private String intro;
+
+    private String tactic;
+    private String firstMove;
 }

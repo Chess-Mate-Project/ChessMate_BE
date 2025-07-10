@@ -7,13 +7,16 @@ import backend.chessmate.global.common.code.UserErrorCode;
 import backend.chessmate.global.common.exception.AuthException;
 import backend.chessmate.global.common.exception.UserException;
 import backend.chessmate.global.config.RedisService;
+import backend.chessmate.global.user.dto.api.UserGame;
 import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.dto.api.UserPerf;
 import backend.chessmate.global.user.entity.GameType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
@@ -63,7 +66,6 @@ public class LichessUtil {
 //    }
 
 
-
     public UserAccountResponse getUserAccount(String token) {
         try {
             WebClient webClient = WebClient.builder()
@@ -93,7 +95,6 @@ public class LichessUtil {
                     .build();
 
 
-
             UserPerf perf = webClient.get()
                     .uri("/api/user/{userName}/perf/{gameType}", u.getName(), gameType)
                     .retrieve()
@@ -110,7 +111,7 @@ public class LichessUtil {
     }
 
 
-    public UserGames callUserGamesApi(User u) {
+    public Mono<UserGames> callUserGamesApi(User u) {
         try {
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
@@ -122,26 +123,32 @@ public class LichessUtil {
             long since = startOfYear.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
             long until = java.time.Instant.now().toEpochMilli();
 
-            log.info("UserGames API 호출: userName={}, since={}, until={}", u.getName(), since, until);
+            log.info("UserGames API 호출: userName={}, since={}, until={}", "junghook", since, until);
 
-            UserGames games = webClient.get()
+
+            log.info("Lichess API 호출 경로: /api/games/user/{}?opening=true&since={}&until={}", "Sankalp_Gupta", since, until);
+
+            return webClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .path("/api/user/{userName}/games")
+                            .path("/api/games/user/{userName}")
                             .queryParam("opening", "true")
                             .queryParam("since", since)
                             .queryParam("until", until)
-                            .build(u.getName()))
+                            .build("Sankalp_Gupta"))
+                    .accept(MediaType.valueOf("application/x-ndjson"))
                     .retrieve()
-                    .bodyToMono(UserGames.class)
-                    .block(); // 동기 방식 수정 필요함
-
-            redisService.save(REDIS_GAMES_KEY + u.getLichessId() , games, acctountTTL);
-
-            return games;
+                    .bodyToFlux(UserGame.class) // NDJSON은 스트림이니까 Flux로 받음
+                    .collectList()
+                    .map(list -> {
+                        UserGames games = new UserGames();
+                        games.setGames(list);
+                        redisService.save(REDIS_GAMES_KEY + u.getLichessId(), games, acctountTTL);
+                        return games;
+                    });
         } catch (Exception e) {
             log.error("UserGames를 받아오는 과정에서 생긴 오류: {}", e.getMessage());
             throw new UserException(UserErrorCode.FAILD_GET_USER_GAMES);
         }
     }
-
 }
+

@@ -2,6 +2,7 @@ package backend.chessmate.global.user.controller;
 
 import backend.chessmate.global.auth.config.UserPrincipal;
 import backend.chessmate.global.common.response.SuccessResponse;
+import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.dto.api.UserPerf;
 import backend.chessmate.global.user.dto.response.TierResponse;
 import backend.chessmate.global.user.dto.response.UserInfoResponse;
@@ -9,6 +10,7 @@ import backend.chessmate.global.user.dto.response.UserPerfResponse;
 import backend.chessmate.global.user.entity.GameType;
 import backend.chessmate.global.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
@@ -54,6 +57,15 @@ public class UserController {
         return ResponseEntity.ok(
                 new SuccessResponse<>("사용자 정보 조회 성공", response)
         );
-
     }
+    @GetMapping("/test")
+    public ResponseEntity<UserGames> test(@AuthenticationPrincipal UserPrincipal u) {
+        log.info("=== /test 호출됨 ===");
+        UserGames userGames = userService.getUserGames(u);
+        return ResponseEntity.ok(userGames);
+    }
+
+
+
+
 }

@@ -7,6 +7,7 @@ import backend.chessmate.global.auth.repository.UserRepository;
 import backend.chessmate.global.common.code.UserErrorCode;
 import backend.chessmate.global.common.exception.UserException;
 import backend.chessmate.global.config.RedisService;
+import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.dto.response.TierResponse;
 import backend.chessmate.global.user.dto.response.TierResult;
 import backend.chessmate.global.user.dto.api.UserPerf;
@@ -35,6 +36,9 @@ public class UserService {
 
     @Value("${spring.data.redis.key.perf_key}")
     private String REDIS_PERF_KEY;
+
+    @Value("${spring.data.redis.key.games_key}")
+    private String REDIS_GAMES_KEY;
 
 //    public TierResponse processUserAccount(GameType gameType, UserPrincipal u) {
 //
@@ -145,14 +149,31 @@ public class UserService {
     }
 
 
+    public UserGames getUserGames(UserPrincipal u) {
+        log.info("=== getUserGames 호출됨 ===");
+        User user = u.getUser();
+        String key = REDIS_GAMES_KEY + user.getLichessId();
+//        if (redisService.hasKey(key)) {
+//            log.info("=== Redis 캐시 hit ===");
+//            return redisService.get(key, UserGames.class);
+//        } else {
+//            log.info("=== Redis 캐시 miss === API 호출 ===");
+//            return lichessUtil.callUserGamesApi(u.getUser()).block(); // 스케쥴링을 하기 때문에 딱히 다시 요청하는 로직은 넣지 않았음.
+//        }
+
+        return lichessUtil.callUserGamesApi(u.getUser()).block();
+    }
 
 
     public UserInfoResponse getUserInfo(UserPrincipal u) {
         User user = u.getUser();
-
-        // 레디스에 UserAccount가 캐싱 되어 있지 않으면 캐싱 후 조회
-
-
+        String key = REDIS_GAMES_KEY + user.getLichessId();
+        if (redisService.hasKey(key)) {
+            // 캐시에서 사용자 정보를 가져옵니다.
+            redisService.get(key, UserInfoResponse.class);
+        } else {
+            throw new UserException(UserErrorCode.FAILD_GET_USER_GAMES); //스케쥴링을 하기 때문에 딱히 다시 요청하는 로직은 넣지 않았음.
+        }
         return UserInfoResponse.builder()
                 .userName(user.getLichessId())
                 .profile(user.getProfile())
