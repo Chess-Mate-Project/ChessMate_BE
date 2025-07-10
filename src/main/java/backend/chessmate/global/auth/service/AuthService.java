@@ -42,13 +42,17 @@ public class AuthService {
     @Value("${lichess.redirect-url}")
     private String redirectUrl;
 
+    @Value("${spring.data.redis.key.oauth_key}")
+    private String REDIS_OAUTH_KEY;
+
 
     public LoginResponse login(OAuthValueRequest request, HttpServletResponse res) {
         OAuthAccessTokenResponse oauthToken = getOAuthAccessToken(request);
 
-        // 유저의 OAuthAccessToken을 Redis에 저장
+        //우선 UserAccount 호출 후 LichessId로 레디스 키 구성
         UserAccountResponse userAccount = lichessutil.getUserAccount(oauthToken.getAccessToken());
-        redisService.save(userAccount.getId(), oauthToken.getAccessToken(), oauthToken.getExpiresIn());
+        // 유저의 OAuthAccessToken을 Redis에 저장
+        redisService.save(REDIS_OAUTH_KEY + userAccount.getId(), oauthToken.getAccessToken(), oauthToken.getExpiresIn());
 
 
         User user = User.builder()
