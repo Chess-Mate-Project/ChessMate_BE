@@ -1,5 +1,6 @@
 package backend.chessmate.global.auth.entity;
 
+import backend.chessmate.global.user.entity.BannerType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,7 +30,8 @@ public class User {
     private int profile;
 
     @Column(name = "banner", nullable = false)
-    private int banner;
+    @Enumerated(EnumType.STRING)
+    private BannerType banner;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -41,8 +43,8 @@ public class User {
     @PrePersist //새롭게 알게된 개념
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
-        this.profile = 0; // 기본 프로필 이미지
-        this.banner = 0; // 기본 배너 이미지
+        this.profile = 0; // 기본 프로필 이미지 (일단 정수로)
+        this.banner = BannerType.TESTBANNER; // 기본 배너 이미지
         this.role = Role.USER; // 기본 역할은 USER로 설정
     }
 
