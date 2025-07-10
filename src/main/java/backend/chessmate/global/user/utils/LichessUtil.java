@@ -133,7 +133,7 @@ public class LichessUtil {
                             .queryParam("opening", "true")
                             .queryParam("since", since)
                             .queryParam("until", until)
-                            .build(u.getName()))
+                            .build("AVDNA8"))
                     .accept(MediaType.valueOf("application/x-ndjson"))
                     .retrieve()
                     .bodyToFlux(UserGame.class) // NDJSON은 스트림이니까 Flux로 받음

@@ -220,12 +220,12 @@ public class UserService {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate();
 
-            Streak streak = Streak.builder()
+            Streak streak = streakMap.getOrDefault(date, Streak.builder()
                     .date(date)
                     .winCount(0)
                     .loseCount(0)
                     .drawCount(0)
-                    .build();
+                    .build());
 
             String status = game.getStatus();
 
