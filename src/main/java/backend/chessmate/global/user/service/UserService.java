@@ -10,6 +10,7 @@ import backend.chessmate.global.config.RedisService;
 import backend.chessmate.global.user.dto.response.TierResponse;
 import backend.chessmate.global.user.dto.response.TierResult;
 import backend.chessmate.global.user.dto.api.UserPerf;
+import backend.chessmate.global.user.dto.response.UserInfoResponse;
 import backend.chessmate.global.user.dto.response.UserPerfResponse;
 import backend.chessmate.global.user.entity.GameType;
 import backend.chessmate.global.user.utils.LichessUtil;
@@ -29,37 +30,37 @@ public class UserService {
     private final LichessUtil lichessUtil;
     private final TierUtil tierUtil;
 
-    @Value("${spring.data.redis.key.account_key}")
-    private String REDIS_ACCOUNT_KEY;
+//    @Value("${spring.data.redis.key.account_key}")
+//    private String REDIS_ACCOUNT_KEY;
 
     @Value("${spring.data.redis.key.perf_key}")
     private String REDIS_PERF_KEY;
 
-    public TierResponse processUserAccount(GameType gameType, UserPrincipal u) {
-
-        User user = u.getUser();
-
-        UserAccountResponse account;
-        // 레디스에 UserAccount가 캐싱 되어 있지 않으면 캐싱 후 조회
-        if (!redisService.hasKey(REDIS_ACCOUNT_KEY + user.getLichessId())) {
-            account = lichessUtil.getUserAccount(user.getLichessId());
-        } else {
-            //이미 캐싱 되어있으므로 레디스 내에서 조회한다.
-            account = redisService.get(REDIS_ACCOUNT_KEY + user.getLichessId(), UserAccountResponse.class);
-
-        }
-
-        int rating = getRatingByGameType(account, gameType);
-        TierResult result = tierUtil.calculateTier(rating);
-
-
-        return TierResponse.builder()
-                .userName(user.getLichessId())
-                .gameType(gameType)
-                .result(result)
-                .build();
-
-    }
+//    public TierResponse processUserAccount(GameType gameType, UserPrincipal u) {
+//
+//        User user = u.getUser();
+//
+//        UserAccountResponse account;
+//        // 레디스에 UserAccount가 캐싱 되어 있지 않으면 캐싱 후 조회
+//        if (!redisService.hasKey(REDIS_ACCOUNT_KEY + user.getLichessId())) {
+//            account = lichessUtil.getUserAccount(user.getLichessId());
+//        } else {
+//            //이미 캐싱 되어있으므로 레디스 내에서 조회한다.
+//            account = redisService.get(REDIS_ACCOUNT_KEY + user.getLichessId(), UserAccountResponse.class);
+//
+//        }
+//
+//        int rating = getRatingByGameType(account, gameType);
+//        TierResult result = tierUtil.calculateTier(rating);
+//
+//
+//        return TierResponse.builder()
+//                .userName(user.getLichessId())
+//                .gameType(gameType)
+//                .result(result)
+//                .build();
+//
+//    }
 
     private int getRatingByGameType(UserAccountResponse account, GameType gameType) {
         return switch (gameType) {
@@ -143,4 +144,20 @@ public class UserService {
 
     }
 
+
+
+
+    public UserInfoResponse getUserInfo(UserPrincipal u) {
+        User user = u.getUser();
+
+        // 레디스에 UserAccount가 캐싱 되어 있지 않으면 캐싱 후 조회
+
+
+        return UserInfoResponse.builder()
+                .userName(user.getLichessId())
+                .profile(user.getProfile())
+                .banner(user.getBanner())
+                .intro(user.getIntro())
+                .build();
+    }
 }

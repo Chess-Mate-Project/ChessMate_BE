@@ -4,10 +4,12 @@ import backend.chessmate.global.auth.config.UserPrincipal;
 import backend.chessmate.global.common.response.SuccessResponse;
 import backend.chessmate.global.user.dto.api.UserPerf;
 import backend.chessmate.global.user.dto.response.TierResponse;
+import backend.chessmate.global.user.dto.response.UserInfoResponse;
 import backend.chessmate.global.user.dto.response.UserPerfResponse;
 import backend.chessmate.global.user.entity.GameType;
 import backend.chessmate.global.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +42,17 @@ public class UserController {
 
         return ResponseEntity.ok(
                 new SuccessResponse<>("사용자 퍼포먼스 조회 성공/ 타입 = " + gameType, response)
+        );
+
+    }
+
+    @GetMapping("/info")
+    public ResponseEntity<SuccessResponse<UserInfoResponse>> getUserInfo(@AuthenticationPrincipal UserPrincipal u) {
+
+        UserInfoResponse response = userService.getUserInfo(u);
+
+        return ResponseEntity.ok(
+                new SuccessResponse<>("사용자 정보 조회 성공", response)
         );
 
     }
