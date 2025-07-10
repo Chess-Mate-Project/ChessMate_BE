@@ -4,6 +4,7 @@ import backend.chessmate.global.auth.config.UserPrincipal;
 import backend.chessmate.global.common.response.SuccessResponse;
 import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.dto.api.UserPerf;
+import backend.chessmate.global.user.dto.response.StreaksResponse;
 import backend.chessmate.global.user.dto.response.TierResponse;
 import backend.chessmate.global.user.dto.response.UserInfoResponse;
 import backend.chessmate.global.user.dto.response.UserPerfResponse;
@@ -58,12 +59,16 @@ public class UserController {
                 new SuccessResponse<>("사용자 정보 조회 성공", response)
         );
     }
-    @GetMapping("/test")
-    public ResponseEntity<UserGames> test(@AuthenticationPrincipal UserPrincipal u) {
-        log.info("=== /test 호출됨 ===");
-        UserGames userGames = userService.getUserGames(u);
-        return ResponseEntity.ok(userGames);
+    @GetMapping("/streaks")
+    public ResponseEntity<SuccessResponse<StreaksResponse>> getUserStreaks(@AuthenticationPrincipal UserPrincipal u) {
+
+        StreaksResponse response = userService.processUserGamesInYearStreak(u);
+
+        return ResponseEntity.ok(
+                new SuccessResponse<>("사용자 스트릭 조회 성공" , response)
+        );
     }
+
 
 
 

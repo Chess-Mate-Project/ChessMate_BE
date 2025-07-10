@@ -2,8 +2,11 @@ package backend.chessmate.global.user.trigger;
 
 import backend.chessmate.global.auth.entity.User;
 import backend.chessmate.global.auth.repository.UserRepository;
+import backend.chessmate.global.config.RedisService;
+import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.utils.LichessUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -11,30 +14,22 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class UserYearGamesScheduler {
+public class UserScheduler {
 
-    private final LichessUtil lichessUtil;
     private final UserRepository userRepository;
+    private final LichessUtil lichessUtil;
 
 
-    public UserYearGamesScheduler(LichessUtil lichessUtil, UserRepository userRepository) {
-        this.lichessUtil = lichessUtil;
+    public UserScheduler(UserRepository userRepository, LichessUtil lichessUtil) {
         this.userRepository = userRepository;
+        this.lichessUtil = lichessUtil;
     }
 
-
     @Scheduled(cron = "0 0/30 * * * *")
-    public void User() {
+    public void UserYearGamesScheduler() {
         List<User> users = userRepository.findAll();
         for (User user : users) {
-            try {
-                lichessUtil.callUserGamesApi(user);
-                log.info("동기처리 확인" + user.getName());
-            } catch (Exception e) {
-                // 예외 처리 로직 (예: 로그 기록)
-                System.err.println("유저 게임 기록 가져오는 도중 오류 발생 " + user.getLichessId() + ": " + e.getMessage());
-            }
+            lichessUtil.callUserGamesApi(user);
         }
-
     }
 }

@@ -123,10 +123,9 @@ public class LichessUtil {
             long since = startOfYear.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
             long until = java.time.Instant.now().toEpochMilli();
 
-            log.info("UserGames API 호출: userName={}, since={}, until={}", "junghook", since, until);
 
 
-            log.info("Lichess API 호출 경로: /api/games/user/{}?opening=true&since={}&until={}", "Sankalp_Gupta", since, until);
+            log.info("Lichess API 호출 경로: /api/games/user/{}?opening=true&since={}&until={}", u.getName(), since, until);
 
             return webClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -134,7 +133,7 @@ public class LichessUtil {
                             .queryParam("opening", "true")
                             .queryParam("since", since)
                             .queryParam("until", until)
-                            .build("Sankalp_Gupta"))
+                            .build(u.getName()))
                     .accept(MediaType.valueOf("application/x-ndjson"))
                     .retrieve()
                     .bodyToFlux(UserGame.class) // NDJSON은 스트림이니까 Flux로 받음
