@@ -2,7 +2,9 @@ package backend.chessmate.global.user.controller;
 
 import backend.chessmate.global.auth.config.UserPrincipal;
 import backend.chessmate.global.common.response.SuccessResponse;
+import backend.chessmate.global.user.dto.api.UserPerf;
 import backend.chessmate.global.user.dto.response.TierResponse;
+import backend.chessmate.global.user.dto.response.UserPerfResponse;
 import backend.chessmate.global.user.entity.GameType;
 import backend.chessmate.global.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +22,24 @@ public class UserController {
 
     private final UserService userService;
 
-    @GetMapping
-    public ResponseEntity<SuccessResponse<TierResponse>> getUserTier(@RequestParam GameType gameType, @AuthenticationPrincipal UserPrincipal u) {
+//    @GetMapping("/tier")
+//    public ResponseEntity<SuccessResponse<TierResponse>> getUserTier(@RequestParam GameType gameType, @AuthenticationPrincipal UserPrincipal u) {
+//
+//        TierResponse response = userService.processUserAccount(gameType, u);
+//
+//        return ResponseEntity.ok(
+//                new SuccessResponse<>("사용자 티어 조회 성공/ 타입 = " + gameType, response)
+//        );
+//
+//    }
 
-        TierResponse response = userService.getUserTier(gameType, u);
+    @GetMapping("/perf")
+    public ResponseEntity<SuccessResponse<UserPerfResponse>> getUserPerf(@RequestParam GameType gameType, @AuthenticationPrincipal UserPrincipal u) {
+
+        UserPerfResponse response = userService.processUserPerf(gameType, u);
 
         return ResponseEntity.ok(
-                new SuccessResponse<>("사용자 티어 조회 성공/ 타입 = " + gameType, response)
+                new SuccessResponse<>("사용자 퍼포먼스 조회 성공/ 타입 = " + gameType, response)
         );
 
     }

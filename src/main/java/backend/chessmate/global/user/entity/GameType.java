@@ -5,4 +5,10 @@ public enum GameType {
     BULLET,
     RAPID,
     CLASSICAL,
+
+    //api 호출 전용
+    blitz,
+    bullet,
+    rapid,
+    classical
 }
