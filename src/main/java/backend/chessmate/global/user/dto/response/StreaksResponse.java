@@ -4,14 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.util.List;
 
 @Builder
 @Data
 @AllArgsConstructor
-public class Streak {
-    private LocalDate date;
-    private int winCount;
-    private int loseCount;
-    private int drawCount;
+public class StreaksResponse {
+    private List<Streak> streaks;
 }
