@@ -167,7 +167,9 @@ public class UserService {
         Map<String, Long> openingMap = new HashMap<>();
         Map<String, Long> firstMoveMap = new HashMap<>();
         for (UserGame game : games.getGames()) {
-
+            if (game.getOpening() == null || game.getOpening().getName() == null) {
+                continue; // opening 정보가 없으면 건너뜀
+            }
             String opening = game.getOpening().getName();
             if (opening.contains(":")) {
                 opening = opening.split(":")[0].trim();
