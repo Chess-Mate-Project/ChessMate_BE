@@ -1,8 +1,6 @@
-package backend.chessmate.global.user.dto.response;
+package backend.chessmate.global.user.dto.response.tier;
 
 import backend.chessmate.global.user.entity.GameType;
-import backend.chessmate.global.user.entity.SubTierType;
-import backend.chessmate.global.user.entity.TierType;
 import lombok.*;
 
 @Setter
