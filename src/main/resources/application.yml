@@ -6,10 +6,10 @@ spring:
       host: localhost
       port: 6379
       key:
-        account_key: LICHESSA_ACCOUNT
-        oauth_key: LICHESS_OAUTH
-        perf_key: LICHESS_PERF
-        games_key: LICHESS_GAMES
+        account_key_base: "LICHESS_ACCOUNT"
+        oauth_key_base: "LICHESS_OAUTH"
+        perf_key_base: "LICHESS_PERF"
+        games_key_base: "LICHESS_GAMES"
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/chess_mate?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
@@ -40,4 +40,5 @@ lichess:
   client-id: abc123def456
   redirect-url: http://localhost:3000/callback
   ttl:
-    account: 3600 # 유저 정보 캐시 1시간
+    account: 3600
+    perf: 3600

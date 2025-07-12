@@ -1,7 +1,6 @@
 package backend.chessmate.global.user.utils;
 
-import backend.chessmate.global.user.dto.response.TierResponse;
-import backend.chessmate.global.user.dto.response.TierResult;
+import backend.chessmate.global.user.dto.response.tier.TierResult;
 import backend.chessmate.global.user.entity.SubTierType;
 import backend.chessmate.global.user.entity.TierType;
 import org.springframework.stereotype.Component;

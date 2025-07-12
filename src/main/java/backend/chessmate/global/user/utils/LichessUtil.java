@@ -1,6 +1,8 @@
 package backend.chessmate.global.user.utils;
 
-import backend.chessmate.global.auth.dto.response.UserAccountResponse;
+import backend.chessmate.global.auth.dto.request.OAuthValueRequest;
+import backend.chessmate.global.auth.dto.response.OAuthAccessTokenResponse;
+import backend.chessmate.global.user.dto.api.UserAccount;
 import backend.chessmate.global.auth.entity.User;
 import backend.chessmate.global.common.code.AuthErrorCode;
 import backend.chessmate.global.common.code.UserErrorCode;
@@ -15,7 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
@@ -26,6 +30,11 @@ public class LichessUtil {
 
     private final RedisService redisService;
 
+    @Value("${lichess.client-id}")
+    private String clientId;
+
+    @Value("${lichess.redirect-url}")
+    private String redirectUrl;
 
     @Value("${lichess.base-url}")
     private String baseUrl;
@@ -33,86 +42,74 @@ public class LichessUtil {
     @Value("${lichess.ttl.account}")
     private long acctountTTL;
 
-    @Value("${spring.data.redis.key.account_key}")
-    private String REDIS_ACCOUNT_KEY;
-
-    @Value("${spring.data.redis.key.perf_key}")
-    private String REDIS_PERF_KEY;
-
-    @Value("${spring.data.redis.key.games_key}")
+    @Value("${spring.data.redis.key.games_key_base}")
     private String REDIS_GAMES_KEY;
-//
-//    @Value("${spring.data.redis.key.oauth_key}")
-//    private String REDIS_OAUTH_KEY;
 
 
-    public LichessUtil(RedisService redisService, @Value("${spring.data.redis.key.account_key}") String redisAccountKey) {
+    public LichessUtil(RedisService redisService) {
         this.redisService = redisService;
-        REDIS_ACCOUNT_KEY = redisAccountKey;
     }
 
-
-//    public UserEmailResponse getUserEmail(String token) {
-//        WebClient webClient = WebClient.builder()
-//                .baseUrl(baseUrl)
-//                .build();
-//
-//        return webClient.get()
-//                .uri("/api/account/email")
-//                .headers(headers -> headers.setBearerAuth(token))
-//                .retrieve()
-//                .bodyToMono(UserEmailResponse.class)
-//                .block(); // 동기 방식 수정 필요함
-//    }
-
-
-    public UserAccountResponse getUserAccount(String token) {
-        try {
+    public Mono<OAuthAccessTokenResponse> getOAuthAccessToken(OAuthValueRequest request) {
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
                     .build();
 
+            return webClient.post()
+                    .uri("/api/token")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(BodyInserters
+                            .fromFormData("grant_type", "authorization_code")
+                            .with("code", request.getCode())
+                            .with("client_id", clientId)
+                            .with("redirect_uri", redirectUrl)
+                            .with("code_verifier", request.getCodeVerifier()))
+                    .retrieve()
+                    .bodyToMono(OAuthAccessTokenResponse.class)
+                    .doOnError(e -> {
+                        throw new AuthException(AuthErrorCode.FAILD_GET_OAUTH_ACCESS_TOKEN);
+                    });
+    }
 
-            UserAccountResponse response = webClient.get()
+
+
+    public Mono<UserAccount> getUserAccount(String token) {
+
+            WebClient webClient = WebClient.builder()
+                    .baseUrl(baseUrl)
+                    .build();
+
+            return webClient.get()
                     .uri("/api/account")
                     .headers(headers -> headers.setBearerAuth(token))
                     .retrieve()
-                    .bodyToMono(UserAccountResponse.class)
-                    .block(); // 동기 방식 수정 필요함
+                    .bodyToMono(UserAccount.class)
+                    .doOnError(e -> {
+                        throw new UserException(UserErrorCode.FAILD_GET_USER_ACCOUNT);
+                    });
 
-            redisService.save(REDIS_ACCOUNT_KEY + response.getId(), response, acctountTTL);
-            return response;
-        } catch (Exception e) {
-            log.error("UserAccount를 받아오는 과정에서 생긴 오류: {}", e.getMessage());
-            throw new AuthException(AuthErrorCode.FAILD_GET_USER_ACCOUNT);
-        }
     }
 
-    public UserPerf callUserPerfApi(User u, GameType gameType) {
-        try {
+    public Mono<UserPerf> callUserPerfApi(User u, GameType gameType) {
+
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
                     .build();
 
 
-            UserPerf perf = webClient.get()
+            return webClient.get()
                     .uri("/api/user/{userName}/perf/{gameType}", u.getName(), gameType)
                     .retrieve()
                     .bodyToMono(UserPerf.class)
-                    .block(); // 동기 방식 수정 필요함
+                    .doOnError(e -> {
+                        throw new UserException(UserErrorCode.FAILD_GET_USER_PERF);
+                    });
 
-            redisService.save(REDIS_PERF_KEY + gameType + u.getLichessId(), perf, acctountTTL);
-
-            return perf;
-        } catch (Exception e) {
-            log.error("UserPerf를 받아오는 과정에서 생긴 오류: {}", e.getMessage());
-            throw new UserException(AuthErrorCode.FAILD_GET_USER_ACCOUNT);
-        }
     }
 
 
     public Mono<UserGames> callUserGamesApi(User u) {
-        try {
+
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
                     .defaultHeader("Accept", "application/json")
@@ -123,9 +120,6 @@ public class LichessUtil {
             long since = startOfYear.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
             long until = java.time.Instant.now().toEpochMilli();
 
-
-
-            log.info("Lichess API 호출 경로: /api/games/user/{}?opening=true&since={}&until={}", u.getName(), since, until);
 
             return webClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -143,11 +137,10 @@ public class LichessUtil {
                         games.setGames(list);
                         redisService.save(REDIS_GAMES_KEY + u.getLichessId(), games, acctountTTL);
                         return games;
+                    })
+                    .doOnError(e -> {
+                        throw new UserException(UserErrorCode.FAILD_GET_USER_GAMES);
                     });
-        } catch (Exception e) {
-            log.error("UserGames를 받아오는 과정에서 생긴 오류: {}", e.getMessage());
-            throw new UserException(UserErrorCode.FAILD_GET_USER_GAMES);
-        }
     }
 }
 

@@ -1,9 +1,9 @@
-package backend.chessmate.global.auth.dto.response;
+package backend.chessmate.global.user.dto.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class UserAccountResponse {
+public class UserAccount {
     private String id;
     private String username;
     private Perfs perfs;

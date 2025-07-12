@@ -1,4 +1,4 @@
-package backend.chessmate.global.user.dto.response;
+package backend.chessmate.global.user.dto.response.streak;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
