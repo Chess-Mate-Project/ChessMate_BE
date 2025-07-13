@@ -78,71 +78,65 @@ public class UserService {
     }
 
 
-    public GamesInUserInfo processUserGamesInUserInfo(UserPrincipal u) {
-        log.info("==== getUserGames 호출됨 ====");
+    public Mono<GamesInUserInfo> processUserGamesInUserInfo(UserPrincipal u) {
         User user = u.getUser();
-
         String key = REDIS_GAMES_KEY_BASE + ":" + user.getLichessId();
 
-        if (redisService.hasKey(key)) {
-            log.info("==== Redis 캐시 hit ====");
-            return redisService.get(key, GamesInUserInfo.class);
-        }
+        return redisService.hasKeyMono(key)
+                .flatMap(exists -> {
+                    if (exists) {
+                        log.info("==== Redis 캐시 hit ====");
+                        return redisService.getMono(key, GamesInUserInfo.class);
+                    } else {
+                        log.info("==== Redis 캐시 miss, UserGames API 호출 ====");
+                        long until = LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+                        long since = LocalDateTime.now().minusMonths(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+                        return lichessUtil.callUserGamesApi(user, since, until)
+                                .map(games -> {
+                                    Map<String, Long> openingMap = new HashMap<>();
+                                    Map<String, Long> firstMoveMap = new HashMap<>();
+                                    for (UserGame game : games.getGames()) {
+                                        if (game.getOpening() != null && game.getOpening().getName() != null) {
+                                            String opening = game.getOpening().getName();
+                                            if (opening.contains(":")) {
+                                                opening = opening.split(":")[0].trim();
+                                            }
+                                            openingMap.merge(opening, 1L, Long::sum);
+                                        }
+                                        String moves = game.getMoves();
+                                        if (moves != null && !moves.isEmpty()) {
+                                            String firstMove = moves.split(" ")[0];
+                                            firstMoveMap.merge(firstMove, 1L, Long::sum);
+                                        }
+                                    }
+                                    log.info("openingMap 초기값: {}", openingMap);
+                                    log.info("firstMoveMap 초기값: {}", firstMoveMap);
 
-        long until = LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        long since = LocalDateTime.now().minusMonths(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        UserGames games = lichessUtil.callUserGamesApi(u.getUser(), since, until).block();
+                                    String opening = openingMap.entrySet().stream()
+                                            .max(Map.Entry.comparingByValue())
+                                            .map(Map.Entry::getKey)
+                                            .orElse("N/A");
+                                    int openingCount = openingMap.getOrDefault(opening, 0L).intValue();
 
+                                    String firstMove = firstMoveMap.entrySet().stream()
+                                            .max(Map.Entry.comparingByValue())
+                                            .map(Map.Entry::getKey)
+                                            .orElse("N/A");
+                                    int firstMoveCount = firstMoveMap.getOrDefault(firstMove, 0L).intValue();
 
-        Map<String, Long> openingMap = new HashMap<>();
-        Map<String, Long> firstMoveMap = new HashMap<>();
-        for (UserGame game : games.getGames()) {
-            if (game.getOpening() != null && game.getOpening().getName() != null) {
-                String opening = game.getOpening().getName();
-                if (opening.contains(":")) {
-                    opening = opening.split(":")[0].trim();
-                }
-                openingMap.merge(opening, 1L, Long::sum);
-            }
+                                    GamesInUserInfo userInfo = GamesInUserInfo.builder()
+                                            .opening(opening)
+                                            .openingCount(openingCount)
+                                            .firstMove(firstMove)
+                                            .firstMoveCount(firstMoveCount)
+                                            .build();
 
-            String moves = game.getMoves();
-            if (moves != null && !moves.isEmpty()) {
-                String firstMove = moves.split(" ")[0];
-                firstMoveMap.merge(firstMove, 1L, Long::sum);
-            }
-        }
-
-        log.info("openingMap 초기값: {}", openingMap);
-
-        log.info("firstMoveMap 초기값: {}", firstMoveMap);
-
-        String opening = openingMap.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse("N/A");
-
-        int openingCount = openingMap.getOrDefault(opening, 0L).intValue();
-
-        String firstMove = firstMoveMap.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse("N/A");
-
-        int firstMoveCount = firstMoveMap.getOrDefault(firstMove, 0L).intValue();
-
-
-        GamesInUserInfo userInfo = GamesInUserInfo.builder()
-                .opening(opening)
-                .openingCount(openingCount)
-                .firstMove(firstMove)
-                .firstMoveCount(firstMoveCount)
-                .build();
-
-        redisService.save(key, userInfo, gamesTTL);
-
-        return userInfo;
+                                    redisService.saveMono(key, userInfo, gamesTTL);
+                                    return userInfo;
+                                });
+                    }
+                });
     }
-
 
     @Transactional
     public UserStreakResponse processUserGamesInYearStreak(UserPrincipal u) {
@@ -232,18 +226,17 @@ public class UserService {
     }
 
 
-    public UserInfoResponse getUserInfo(UserPrincipal u) {
+    public Mono<UserInfoResponse> getUserInfo(UserPrincipal u) {
         User user = u.getUser();
 
-        GamesInUserInfo gamesInUserInfo = processUserGamesInUserInfo(u);
-
-
-        return UserInfoResponse.builder()
-                .userName(user.getLichessId())
-                .profile(user.getProfile())
-                .banner(user.getBanner())
-                .intro(user.getIntro())
-                .gamesInUserInfo(gamesInUserInfo)
-                .build();
+        return processUserGamesInUserInfo(u)
+                .map(gamesInUserInfo -> UserInfoResponse.builder()
+                        .userName(user.getLichessId())
+                        .profile(user.getProfile())
+                        .banner(user.getBanner())
+                        .intro(user.getIntro())
+                        .gamesInUserInfo(gamesInUserInfo)
+                        .build()
+                );
     }
 }

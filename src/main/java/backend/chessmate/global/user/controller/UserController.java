@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @RestController
@@ -36,9 +37,9 @@ public class UserController {
 //    }
 
     @GetMapping("/perf")
-    public ResponseEntity<SuccessResponse<UserPerfResponse>> getUserPerf(@RequestParam GameType gameType, @AuthenticationPrincipal UserPrincipal u) {
+    public ResponseEntity<SuccessResponse<Mono<UserPerfResponse>>> getUserPerf(@RequestParam GameType gameType, @AuthenticationPrincipal UserPrincipal u) {
 
-        UserPerfResponse response = userService.processUserPerf(gameType, u);
+        Mono<UserPerfResponse> response = userService.processUserPerf(gameType, u);
 
         return ResponseEntity.ok(
                 new SuccessResponse<>("사용자 퍼포먼스 조회 성공/ 타입 = " + gameType, response)
@@ -47,9 +48,9 @@ public class UserController {
     }
 
     @GetMapping("/info")
-    public ResponseEntity<SuccessResponse<UserInfoResponse>> getUserInfo(@AuthenticationPrincipal UserPrincipal u) {
+    public ResponseEntity<SuccessResponse<Mono<UserInfoResponse>>> getUserInfo(@AuthenticationPrincipal UserPrincipal u) {
 
-        UserInfoResponse response = userService.getUserInfo(u);
+        Mono<UserInfoResponse> response = userService.getUserInfo(u);
 
         return ResponseEntity.ok(
                 new SuccessResponse<>("사용자 정보 조회 성공", response)
