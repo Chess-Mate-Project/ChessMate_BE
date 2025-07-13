@@ -15,6 +15,6 @@ public class UserInfoResponse {
     private int profile; //일단 정수타입
     private String intro;
 
-    private String opening;
-    private String firstMove;
+
+    private GamesInUserInfo gamesInUserInfo;
 }

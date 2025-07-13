@@ -108,18 +108,14 @@ public class LichessUtil {
     }
 
 
-    public Mono<UserGames> callUserGamesApi(User u) {
+    public Mono<UserGames> callUserGamesApi(User u,long since, long until) {
 
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
                     .defaultHeader("Accept", "application/json")
-
                     .build();
 
-            LocalDateTime startOfYear = LocalDateTime.of(java.time.LocalDate.now().getYear(), 1, 1, 0, 0, 0);
-            long since = startOfYear.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
-            long until = java.time.Instant.now().toEpochMilli();
-
+            log.info(baseUrl + "/api/games/user/AVDNA8?opening=true&since=" + since + "&until=" + until);
 
             return webClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -127,7 +123,7 @@ public class LichessUtil {
                             .queryParam("opening", "true")
                             .queryParam("since", since)
                             .queryParam("until", until)
-                            .build("AVDNA8"))
+                            .build("Pap-G"))
                     .accept(MediaType.valueOf("application/x-ndjson"))
                     .retrieve()
                     .bodyToFlux(UserGame.class) // NDJSON은 스트림이니까 Flux로 받음
@@ -135,7 +131,6 @@ public class LichessUtil {
                     .map(list -> {
                         UserGames games = new UserGames();
                         games.setGames(list);
-                        redisService.save(REDIS_GAMES_KEY + u.getLichessId(), games, acctountTTL);
                         return games;
                     })
                     .doOnError(e -> {

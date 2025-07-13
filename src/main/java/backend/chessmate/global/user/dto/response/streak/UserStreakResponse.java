@@ -9,6 +9,6 @@ import java.util.List;
 @Builder
 @Data
 @AllArgsConstructor
-public class StreaksResponse {
-    private List<Streak> streaks;
+public class UserStreakResponse {
+    private List<UserStreak> streaks;
 }

@@ -25,13 +25,13 @@ public class UserScheduler {
         this.lichessUtil = lichessUtil;
     }
 
-    @Scheduled(cron = "0 0/30 * * * *")
-    public void UserYearGamesScheduler() {
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            log.info("UserScheduler - 유저 스트릭 정보 갱신 시작 - 유저: {}", user.getName());
-            lichessUtil.callUserGamesApi(user);
-            log.info("UserScheduler - 유저 스트릭 정보 갱신 완료 - 유저: {}", user.getName());
-        }
-    }
+//    @Scheduled(cron = "0 0/30 * * * *")
+//    public void UserYearGamesScheduler() {
+//        List<User> users = userRepository.findAll();
+//        for (User user : users) {
+//            log.info("UserScheduler - 유저 스트릭 정보 갱신 시작 - 유저: {}", user.getName());
+//            lichessUtil.callUserGamesApi(user);
+//            log.info("UserScheduler - 유저 스트릭 정보 갱신 완료 - 유저: {}", user.getName());
+//        }
+//    }
 }

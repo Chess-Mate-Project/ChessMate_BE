@@ -2,20 +2,19 @@ package backend.chessmate.global.user.service;
 
 import backend.chessmate.global.auth.config.UserPrincipal;
 import backend.chessmate.global.auth.entity.User;
-import backend.chessmate.global.auth.repository.UserRepository;
-import backend.chessmate.global.common.code.UserErrorCode;
-import backend.chessmate.global.common.exception.UserException;
 import backend.chessmate.global.config.RedisService;
 import backend.chessmate.global.user.dto.api.UserGame;
 import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.dto.response.*;
 import backend.chessmate.global.user.dto.api.UserPerf;
-import backend.chessmate.global.user.dto.response.streak.Streak;
-import backend.chessmate.global.user.dto.response.streak.StreaksResponse;
-import backend.chessmate.global.user.dto.response.tier.TierResult;
+import backend.chessmate.global.user.dto.response.streak.UserStreak;
+import backend.chessmate.global.user.dto.response.streak.UserStreakResponse;
 import backend.chessmate.global.user.entity.GameType;
+import backend.chessmate.global.user.entity.Streak;
+import backend.chessmate.global.user.repository.StreaksRepository;
 import backend.chessmate.global.user.utils.LichessUtil;
 import backend.chessmate.global.user.utils.TierUtil;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +23,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 
@@ -32,11 +32,10 @@ import java.util.*;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepository userRepository;
+    private final StreaksRepository streaksRepository;
     private final RedisService redisService;
     private final LichessUtil lichessUtil;
     private final TierUtil tierUtil;
-
 
 
     @Value("${spring.data.redis.key.perf_key_base}")
@@ -45,26 +44,32 @@ public class UserService {
     @Value("${spring.data.redis.key.games_key_base}")
     private String REDIS_GAMES_KEY_BASE;
 
+    @Value("${spring.data.redis.key.streak_key_base}")
+    private String REDIS_STREAK_KEY_BASE;
+
     @Value("${lichess.ttl.account}")
     private long acountTTL;
 
     @Value("${lichess.ttl.perf}")
     private long perfTTL;
 
+    @Value("${lichess.ttl.games}")
+    private long gamesTTL;
+
 
     public UserPerfResponse processUserPerf(GameType gameType, UserPrincipal u) {
         User user = u.getUser();
-        
+
         String key = REDIS_PERF_KEY_BASE + ":" + gameType + ":" + user.getLichessId();
 
         Mono<UserPerf> perf = lichessUtil.callUserPerfApi(user, gameType);
         UserPerfResponse response = UserPerfResponse.from(perf, tierUtil);
 
-        
+
         if (redisService.hasKey(REDIS_PERF_KEY_BASE + ":" + gameType + ":" + user.getLichessId())) {
             log.info("==== Redis 캐시 hit ====");
             return redisService.get(key, UserPerfResponse.class);
-            
+
         }
 
         log.info("==== Redis 캐시 miss ==== API 호출 ====");
@@ -77,64 +82,96 @@ public class UserService {
         log.info("==== getUserGames 호출됨 ====");
         User user = u.getUser();
 
-        String key = REDIS_GAMES_KEY_BASE + user.getLichessId();
-        UserGames games = null;
+        String key = REDIS_GAMES_KEY_BASE + ":" + user.getLichessId();
+
         if (redisService.hasKey(key)) {
             log.info("==== Redis 캐시 hit ====");
-            games = redisService.get(key, UserGames.class);
-        } else {
-            log.info("==== Redis 캐시 miss === API 호출 ====");
-            games = lichessUtil.callUserGamesApi(u.getUser()).block();
+            return redisService.get(key, GamesInUserInfo.class);
         }
+
+        long until = LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long since = LocalDateTime.now().minusMonths(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        UserGames games = lichessUtil.callUserGamesApi(u.getUser(), since, until).block();
+
+
         Map<String, Long> openingMap = new HashMap<>();
         Map<String, Long> firstMoveMap = new HashMap<>();
         for (UserGame game : games.getGames()) {
-            if (game.getOpening() == null || game.getOpening().getName() == null) {
-                continue; // opening 정보가 없으면 건너뜀
+            if (game.getOpening() != null && game.getOpening().getName() != null) {
+                String opening = game.getOpening().getName();
+                if (opening.contains(":")) {
+                    opening = opening.split(":")[0].trim();
+                }
+                openingMap.merge(opening, 1L, Long::sum);
             }
-            String opening = game.getOpening().getName();
-            if (opening.contains(":")) {
-                opening = opening.split(":")[0].trim();
+
+            String moves = game.getMoves();
+            if (moves != null && !moves.isEmpty()) {
+                String firstMove = moves.split(" ")[0];
+                firstMoveMap.merge(firstMove, 1L, Long::sum);
             }
-
-            openingMap.merge(opening, 1L, Long::sum);
-
-            String firstMove = game.getMoves().split(" ")[0];
-
-            firstMoveMap.merge(firstMove, 1L, Long::sum);
         }
+
+        log.info("openingMap 초기값: {}", openingMap);
+
+        log.info("firstMoveMap 초기값: {}", firstMoveMap);
 
         String opening = openingMap.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("N/A");
 
+        int openingCount = openingMap.getOrDefault(opening, 0L).intValue();
+
         String firstMove = firstMoveMap.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("N/A");
 
-        return GamesInUserInfo.builder()
+        int firstMoveCount = firstMoveMap.getOrDefault(firstMove, 0L).intValue();
+
+
+        GamesInUserInfo userInfo = GamesInUserInfo.builder()
                 .opening(opening)
+                .openingCount(openingCount)
                 .firstMove(firstMove)
+                .firstMoveCount(firstMoveCount)
                 .build();
+
+        redisService.save(key, userInfo, gamesTTL);
+
+        return userInfo;
     }
 
-    public StreaksResponse processUserGamesInYearStreak(UserPrincipal u) {
-        log.info("=== getUserGames 호출됨 ===");
+
+    @Transactional
+    public UserStreakResponse processUserGamesInYearStreak(UserPrincipal u) {
+
         User user = u.getUser();
 
-        String key = REDIS_GAMES_KEY_BASE + user.getLichessId();
-        UserGames games = null;
-        if (redisService.hasKey(key)) {
-            log.info("=== Redis 캐시 hit ===");
-            games = redisService.get(key, UserGames.class);
-        } else {
-            log.info("=== Redis 캐시 miss === API 호출 ===");
-            games = lichessUtil.callUserGamesApi(u.getUser()).block();
+        if (streaksRepository.existsByUser(user)) {
+            List<Streak> userStreaks = streaksRepository.findAllByUserOrderByDateDesc(user);
+
+            List<UserStreak> streaks = new ArrayList<>();
+            for (Streak streak : userStreaks) {
+                UserStreak s = UserStreak.from(streak);
+                streaks.add(s);
+            }
+
+            return UserStreakResponse.builder()
+                    .streaks(streaks)
+                    .build();
         }
 
-        Map<LocalDate, Streak> streakMap = new HashMap<>();
+        LocalDateTime startOfYear = LocalDateTime.of(java.time.LocalDate.now().getYear(), 1, 1, 0, 0, 0);
+        long since = startOfYear.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long until = java.time.Instant.now().toEpochMilli();
+
+        log.info("=== getUserGames 호출됨 ===");
+        UserGames games = lichessUtil.callUserGamesApi(u.getUser(), since, until).block();
+
+
+        Map<LocalDate, UserStreak> streakMap = new HashMap<>();
 
         for (UserGame game : games.getGames()) {
 
@@ -142,16 +179,14 @@ public class UserService {
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate();
 
-            Streak streak = streakMap.getOrDefault(date, Streak.builder()
+            UserStreak streak = streakMap.getOrDefault(date, UserStreak.builder()
                     .date(date)
                     .winCount(0)
                     .loseCount(0)
                     .drawCount(0)
                     .build());
 
-            String status = game.getStatus();
-
-
+            // 게임의 상태에 따라 승, 패, 무승부 카운트 업데이트
             if (game.getStatus().equals("draw")) {
                 streak.setDrawCount(streak.getDrawCount() + 1);
 
@@ -175,31 +210,40 @@ public class UserService {
             streakMap.put(date, streak);
 
         }
-        List<Streak> streaks = new ArrayList<>(streakMap.values());
-        streaks.sort(Comparator.comparing(Streak::getDate));
+        List<UserStreak> userStreaks = new ArrayList<>(streakMap.values());
 
-        return StreaksResponse.builder()
-                .streaks(streaks)
-                .build();
+        userStreaks.sort(Comparator.comparing(UserStreak::getDate));
 
-
-    }
-
-
-        public UserInfoResponse getUserInfo (UserPrincipal u){
-            User user = u.getUser();
-            String key = REDIS_GAMES_KEY_BASE + user.getLichessId();
-
-            GamesInUserInfo gamesInUserInfo = processUserGamesInUserInfo(u);
-
-
-            return UserInfoResponse.builder()
-                    .userName(user.getLichessId())
-                    .profile(user.getProfile())
-                    .banner(user.getBanner())
-                    .intro(user.getIntro())
-                    .firstMove(gamesInUserInfo.getFirstMove())
-                    .opening(gamesInUserInfo.getOpening())
+        for (UserStreak streak : userStreaks) {
+            Streak s = Streak.builder()
+                    .user(user)
+                    .date(streak.getDate())
+                    .played(streak.getWinCount() + streak.getLoseCount() + streak.getDrawCount() > 0)
+                    .winCount(streak.getWinCount())
+                    .loseCount(streak.getLoseCount())
+                    .drawCount(streak.getDrawCount())
                     .build();
+            streaksRepository.save(s);
         }
+
+        return UserStreakResponse.builder()
+                .streaks(userStreaks)
+                .build();
     }
+
+
+    public UserInfoResponse getUserInfo(UserPrincipal u) {
+        User user = u.getUser();
+
+        GamesInUserInfo gamesInUserInfo = processUserGamesInUserInfo(u);
+
+
+        return UserInfoResponse.builder()
+                .userName(user.getLichessId())
+                .profile(user.getProfile())
+                .banner(user.getBanner())
+                .intro(user.getIntro())
+                .gamesInUserInfo(gamesInUserInfo)
+                .build();
+    }
+}

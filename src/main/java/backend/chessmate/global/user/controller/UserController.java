@@ -2,7 +2,7 @@ package backend.chessmate.global.user.controller;
 
 import backend.chessmate.global.auth.config.UserPrincipal;
 import backend.chessmate.global.common.response.SuccessResponse;
-import backend.chessmate.global.user.dto.response.streak.StreaksResponse;
+import backend.chessmate.global.user.dto.response.streak.UserStreakResponse;
 import backend.chessmate.global.user.dto.response.UserInfoResponse;
 import backend.chessmate.global.user.dto.response.UserPerfResponse;
 import backend.chessmate.global.user.entity.GameType;
@@ -56,9 +56,9 @@ public class UserController {
         );
     }
     @GetMapping("/streaks")
-    public ResponseEntity<SuccessResponse<StreaksResponse>> getUserStreaks(@AuthenticationPrincipal UserPrincipal u) {
+    public ResponseEntity<SuccessResponse<UserStreakResponse>> getUserStreaks(@AuthenticationPrincipal UserPrincipal u) {
 
-        StreaksResponse response = userService.processUserGamesInYearStreak(u);
+        UserStreakResponse response = userService.processUserGamesInYearStreak(u);
 
         return ResponseEntity.ok(
                 new SuccessResponse<>("사용자 스트릭 조회 성공" , response)
