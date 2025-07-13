@@ -1,16 +1,21 @@
 package backend.chessmate.global.config;
 
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class RedisService {
 
+    private final ReactiveRedisTemplate<String, Object> reactiveRedisTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    public RedisService(RedisTemplate<String, Object> redisTemplate) {
+    public RedisService(ReactiveRedisTemplate<String, Object> reactiveRedisTemplate, RedisTemplate<String, Object> redisTemplate) {
+        this.reactiveRedisTemplate = reactiveRedisTemplate;
         this.redisTemplate = redisTemplate;
     }
 
@@ -51,5 +56,22 @@ public class RedisService {
      */
     public boolean hasKey(String key) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+
+    public Mono<Boolean> hasKeyMono(String key) {
+        return reactiveRedisTemplate.hasKey(key);
+    }
+
+    public <T> Mono<T> getMono(String key, Class<T> clazz) {
+        return reactiveRedisTemplate.opsForValue()
+                .get(key)
+                .map(o -> clazz.cast(o));
+    }
+
+    public <T> Mono<Boolean> saveMono(String key, T value, long ttlSeconds) {
+        return reactiveRedisTemplate.opsForValue()
+                .set(key, value)
+                .flatMap(success -> reactiveRedisTemplate.expire(key, Duration.ofSeconds(ttlSeconds)));
     }
 }

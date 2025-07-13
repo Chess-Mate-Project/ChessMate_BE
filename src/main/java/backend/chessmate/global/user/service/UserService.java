@@ -57,24 +57,24 @@ public class UserService {
     private long gamesTTL;
 
 
-    public UserPerfResponse processUserPerf(GameType gameType, UserPrincipal u) {
+    public Mono<UserPerfResponse> processUserPerf(GameType gameType, UserPrincipal u) {
         User user = u.getUser();
-
         String key = REDIS_PERF_KEY_BASE + ":" + gameType + ":" + user.getLichessId();
 
-        Mono<UserPerf> perf = lichessUtil.callUserPerfApi(user, gameType);
-        UserPerfResponse response = UserPerfResponse.from(perf, tierUtil);
+        return redisService.hasKeyMono(key)
+                .flatMap(exists -> {
+                    if (exists) {
+                        log.info("==== Redis 캐시 hit ====");
+                        return redisService.getMono(key, UserPerfResponse.class);
+                    } else {
+                        log.info("==== Redis 캐시 miss, UserPerf API 호출 ====");
+                        return lichessUtil.callUserPerfApi(user, gameType)
+                                .flatMap(perf -> UserPerfResponse.from(Mono.just(perf), tierUtil))
+                                .flatMap(response -> redisService.saveMono(key, response, perfTTL)
+                                        .thenReturn(response));
 
-
-        if (redisService.hasKey(REDIS_PERF_KEY_BASE + ":" + gameType + ":" + user.getLichessId())) {
-            log.info("==== Redis 캐시 hit ====");
-            return redisService.get(key, UserPerfResponse.class);
-
-        }
-
-        log.info("==== Redis 캐시 miss ==== API 호출 ====");
-        redisService.save(key, response, perfTTL);
-        return response;
+                    }
+                });
     }
 
 
