@@ -32,20 +32,17 @@ public class AuthService {
 
 
     @Value("${spring.data.redis.key.oauth_key_base}")
-    private String REDIS_OAUTH_;
-
-    @Value("${spring.data.redis.key.account_key_base}")
     private String REDIS_OAUTH_KEY;
 
 
     public LoginResponse login(OAuthValueRequest request, HttpServletResponse res) {
 
-        OAuthAccessTokenResponse oauthTokenResponse = lichessutil.getOAuthAccessToken(request).block();
+        OAuthAccessTokenResponse oauthTokenResponse = lichessutil.getOAuthAccessToken(request);
         String oauthToken = oauthTokenResponse.getAccessToken();
 
 
         //우선 UserAccount 호출 후 LichessId로 레디스 키 구성
-        UserAccount userAccount = lichessutil.getUserAccount(oauthToken).block();
+        UserAccount userAccount = lichessutil.getUserAccount(oauthToken);
         String key = REDIS_OAUTH_KEY + ":" + userAccount.getId();
 
         // 유저의 OAuthAccessToken을 Redis에 저장

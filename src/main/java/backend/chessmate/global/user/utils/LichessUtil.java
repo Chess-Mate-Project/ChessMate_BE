@@ -50,7 +50,7 @@ public class LichessUtil {
         this.redisService = redisService;
     }
 
-    public Mono<OAuthAccessTokenResponse> getOAuthAccessToken(OAuthValueRequest request) {
+    public OAuthAccessTokenResponse getOAuthAccessToken(OAuthValueRequest request) {
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
                     .build();
@@ -68,12 +68,12 @@ public class LichessUtil {
                     .bodyToMono(OAuthAccessTokenResponse.class)
                     .doOnError(e -> {
                         throw new AuthException(AuthErrorCode.FAILD_GET_OAUTH_ACCESS_TOKEN);
-                    });
+                    }).block();
     }
 
 
 
-    public Mono<UserAccount> getUserAccount(String token) {
+    public UserAccount getUserAccount(String token) {
 
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
@@ -86,11 +86,11 @@ public class LichessUtil {
                     .bodyToMono(UserAccount.class)
                     .doOnError(e -> {
                         throw new UserException(UserErrorCode.FAILD_GET_USER_ACCOUNT);
-                    });
+                    }).block();
 
     }
 
-    public Mono<UserPerf> callUserPerfApi(User u, GameType gameType) {
+    public UserPerf callUserPerfApi(User u, GameType gameType) {
 
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
@@ -103,12 +103,12 @@ public class LichessUtil {
                     .bodyToMono(UserPerf.class)
                     .doOnError(e -> {
                         throw new UserException(UserErrorCode.FAILD_GET_USER_PERF);
-                    });
+                    }).block();
 
     }
 
 
-    public Mono<UserGames> callUserGamesApi(User u,long since, long until) {
+    public UserGames callUserGamesApi(User u,long since, long until) {
 
             WebClient webClient = WebClient.builder()
                     .baseUrl(baseUrl)
@@ -135,7 +135,7 @@ public class LichessUtil {
                     })
                     .doOnError(e -> {
                         throw new UserException(UserErrorCode.FAILD_GET_USER_GAMES);
-                    });
+                    }).block();
     }
 }
 

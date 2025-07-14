@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
+
 @Builder
 @Data
 @AllArgsConstructor
@@ -33,63 +35,100 @@ public class UserPerfResponse {
     private Integer nowWinningStreak; //현재 연승
     private Integer nowLosingStreak; //현재 연패
 
-    public static UserPerfResponse from(Mono<UserPerf> perf, TierUtil tierUtil) {
+    public static UserPerfResponse from(UserPerf p, TierUtil tierUtil) {
+        var stat = p.getStat();
 
-        return perf.map(p -> {
-            var stat = p.getStat();
-            Integer highestRating = stat.getHighest().getRating();
-            Integer lowestRating = stat.getLowest().getRating();
+        // Optional로 null-safe하게 rating 가져오기
+        Integer highestRating = Optional.ofNullable(stat)
+                .map(s -> s.getHighest())
+                .map(h -> h.getRating())
+                .orElse(0);  // 기본값 0 or 필요에 따라 null 처리 가능
 
-            var glicko = p.getPerf().getGlicko();
-            Integer nowRating = (int) glicko.getRating();
+        Integer lowestRating = Optional.ofNullable(stat)
+                .map(s -> s.getLowest())
+                .map(l -> l.getRating())
+                .orElse(0);
 
-            var count = stat.getCount();
-            Integer totalGames = count.getAll();
-            Integer winCount = count.getWin();
-            Integer lossCount = count.getLoss();
-            Integer drawCount = count.getDraw();
-            Long playTime = count.getSeconds();
+        var glicko = p.getPerf().getGlicko();
+        Integer nowRating = (int) glicko.getRating();
 
-            var streak = stat.getResultStreak();
-            Integer maxWinningStreak = streak.getWin().getMax().getValue();
-            Integer maxLosingStreak = streak.getLoss().getMax().getValue();
-            Integer nowWinningStreak = streak.getWin().getCur().getValue();
-            Integer nowLosingStreak = streak.getLoss().getCur().getValue();
+        var count = stat.getCount();
+        Integer totalGames = Optional.ofNullable(count)
+                .map(c -> c.getAll())
+                .orElse(0);
 
-            Double percentile = p.getPercentile();
+        Integer winCount = Optional.ofNullable(count)
+                .map(c -> c.getWin())
+                .orElse(0);
 
-            TierResult nowTierResult = tierUtil.calculateTier(nowRating);
-            TierResult maxTierResult = tierUtil.calculateTier(highestRating);
-            TierResult minTierResult = tierUtil.calculateTier(lowestRating);
+        Integer lossCount = Optional.ofNullable(count)
+                .map(c -> c.getLoss())
+                .orElse(0);
 
-            double winRate = 0.0;
-            if (totalGames != null && totalGames > 0 && winCount != null) {
-                winRate = (double) winCount / totalGames * 100;
-            }
+        Integer drawCount = Optional.ofNullable(count)
+                .map(c -> c.getDraw())
+                .orElse(0);
 
-            return UserPerfResponse.builder()
-                    .nowTier(nowTierResult)
-                    .maxTier(maxTierResult)
-                    .minTier(minTierResult)
-                    .totalGames(totalGames)
-                    .playTime(playTime)
-                    .percentile(percentile)
-                    .winCount(winCount)
-                    .lossCount(lossCount)
-                    .drawCount(drawCount)
-                    .winRate(winRate)
-                    .maxWinningStreak(maxWinningStreak)
-                    .maxLosingStreak(maxLosingStreak)
-                    .nowWinningStreak(nowWinningStreak)
-                    .nowLosingStreak(nowLosingStreak)
-                    .build();
-            
-            
-                }
-                
-        ).block();
-        
+        Long playTime = Optional.ofNullable(count)
+                .map(c -> c.getSeconds())
+                .orElse(0L);
+
+        var streak = stat.getResultStreak();
+
+        Integer maxWinningStreak = Optional.ofNullable(streak)
+                .map(st -> st.getWin())
+                .map(win -> win.getMax())
+                .map(max -> max.getValue())
+                .orElse(0);
+
+        Integer maxLosingStreak = Optional.ofNullable(streak)
+                .map(st -> st.getLoss())
+                .map(loss -> loss.getMax())
+                .map(max -> max.getValue())
+                .orElse(0);
+
+        Integer nowWinningStreak = Optional.ofNullable(streak)
+                .map(st -> st.getWin())
+                .map(win -> win.getCur())
+                .map(cur -> cur.getValue())
+                .orElse(0);
+
+        Integer nowLosingStreak = Optional.ofNullable(streak)
+                .map(st -> st.getLoss())
+                .map(loss -> loss.getCur())
+                .map(cur -> cur.getValue())
+                .orElse(0);
+
+        Double percentile = Optional.ofNullable(p.getPercentile())
+                .orElse(0.0);
+
+        TierResult nowTierResult = tierUtil.calculateTier(nowRating);
+        TierResult maxTierResult = tierUtil.calculateTier(highestRating);
+        TierResult minTierResult = tierUtil.calculateTier(lowestRating);
+
+        double winRate = 0.0;
+        if (totalGames > 0 && winCount != null) {
+            winRate = (double) winCount / totalGames * 100;
+        }
+
+        return UserPerfResponse.builder()
+                .nowTier(nowTierResult)
+                .maxTier(maxTierResult)
+                .minTier(minTierResult)
+                .totalGames(totalGames)
+                .playTime(playTime)
+                .percentile(percentile)
+                .winCount(winCount)
+                .lossCount(lossCount)
+                .drawCount(drawCount)
+                .winRate(winRate)
+                .maxWinningStreak(maxWinningStreak)
+                .maxLosingStreak(maxLosingStreak)
+                .nowWinningStreak(nowWinningStreak)
+                .nowLosingStreak(nowLosingStreak)
+                .build();
     }
+
 }
 
 

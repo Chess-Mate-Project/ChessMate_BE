@@ -62,7 +62,7 @@ public class UserService {
 
         String key = REDIS_PERF_KEY_BASE + ":" + gameType + ":" + user.getLichessId();
 
-        Mono<UserPerf> perf = lichessUtil.callUserPerfApi(user, gameType);
+        UserPerf perf = lichessUtil.callUserPerfApi(user, gameType);
         UserPerfResponse response = UserPerfResponse.from(perf, tierUtil);
 
 
@@ -91,7 +91,7 @@ public class UserService {
 
         long until = LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         long since = LocalDateTime.now().minusMonths(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-        UserGames games = lichessUtil.callUserGamesApi(u.getUser(), since, until).block();
+        UserGames games = lichessUtil.callUserGamesApi(u.getUser(), since, until);
 
 
         Map<String, Long> openingMap = new HashMap<>();
@@ -168,7 +168,7 @@ public class UserService {
         long until = java.time.Instant.now().toEpochMilli();
 
         log.info("=== getUserGames 호출됨 ===");
-        UserGames games = lichessUtil.callUserGamesApi(u.getUser(), since, until).block();
+        UserGames games = lichessUtil.callUserGamesApi(u.getUser(), since, until);
 
 
         Map<LocalDate, UserStreak> streakMap = new HashMap<>();
