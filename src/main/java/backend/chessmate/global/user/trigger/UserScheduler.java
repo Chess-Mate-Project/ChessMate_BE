@@ -2,21 +2,19 @@ package backend.chessmate.global.user.trigger;
 
 import backend.chessmate.global.auth.entity.User;
 import backend.chessmate.global.auth.repository.UserRepository;
-import backend.chessmate.global.config.RedisService;
 import backend.chessmate.global.user.dto.api.UserGame;
 import backend.chessmate.global.user.dto.api.UserGames;
-import backend.chessmate.global.user.dto.response.streak.UserStreak;
 import backend.chessmate.global.user.entity.Streak;
 import backend.chessmate.global.user.repository.StreaksRepository;
 import backend.chessmate.global.user.utils.LichessUtil;
+import backend.chessmate.global.user.utils.UserGamesUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 import java.time.ZoneId;
 import java.util.*;
 
@@ -27,11 +25,13 @@ public class UserScheduler {
     private final UserRepository userRepository;
     private final LichessUtil lichessUtil;
     private final StreaksRepository streaksRepository;
+    private final UserGamesUtil userGamesUtil;
 
-    public UserScheduler(UserRepository userRepository, LichessUtil lichessUtil, StreaksRepository streaksRepository) {
+    public UserScheduler(UserRepository userRepository, LichessUtil lichessUtil, StreaksRepository streaksRepository, UserGamesUtil userGamesUtil) {
         this.userRepository = userRepository;
         this.lichessUtil = lichessUtil;
         this.streaksRepository = streaksRepository;
+        this.userGamesUtil = userGamesUtil;
     }
 
 
@@ -61,7 +61,7 @@ public class UserScheduler {
 
                 if (!"resign".equals(game.getStatus())) continue;
 
-                String userColor = getUserColor(game, user.getName());
+                String userColor = userGamesUtil.getUserColor(game, user.getName());
                 String winnerColor = game.getWinner();
 
                 if (winnerColor == null || userColor == null) continue;
@@ -95,22 +95,5 @@ public class UserScheduler {
         }
     }
 
-    private String getUserColor(UserGame game, String userName) {
-        if (game.getPlayers() == null) return null;
-
-        if (game.getPlayers().getWhite() != null &&
-                game.getPlayers().getWhite().getUser() != null &&
-                userName.equalsIgnoreCase(game.getPlayers().getWhite().getUser().getName())) {
-            return "white";
-        }
-
-        if (game.getPlayers().getBlack() != null &&
-                game.getPlayers().getBlack().getUser() != null &&
-                userName.equalsIgnoreCase(game.getPlayers().getBlack().getUser().getName())) {
-            return "black";
-        }
-
-        return null;
-    }
 
 }
