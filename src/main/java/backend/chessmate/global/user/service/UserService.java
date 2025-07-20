@@ -44,12 +44,6 @@ public class UserService {
     @Value("${spring.data.redis.key.games_key_base}")
     private String REDIS_GAMES_KEY_BASE;
 
-    @Value("${spring.data.redis.key.streak_key_base}")
-    private String REDIS_STREAK_KEY_BASE;
-
-    @Value("${lichess.ttl.account}")
-    private long acountTTL;
-
     @Value("${lichess.ttl.perf}")
     private long perfTTL;
 
@@ -66,7 +60,7 @@ public class UserService {
         UserPerfResponse response = UserPerfResponse.from(perf, tierUtil);
 
 
-        if (redisService.hasKey(REDIS_PERF_KEY_BASE + ":" + gameType + ":" + user.getLichessId())) {
+        if (redisService.hasKey(key)) {
             log.info("==== Redis 캐시 hit ====");
             return redisService.get(key, UserPerfResponse.class);
 
