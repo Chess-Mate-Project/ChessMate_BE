@@ -10,6 +10,7 @@ import backend.chessmate.global.auth.entity.User;
 import backend.chessmate.global.auth.repository.UserRepository;
 import backend.chessmate.global.config.RedisService;
 import backend.chessmate.global.user.dto.api.UserAccount;
+import backend.chessmate.global.user.entity.BannerType;
 import backend.chessmate.global.user.service.UserService;
 import backend.chessmate.global.user.utils.LichessUtil;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 
 @Slf4j
@@ -48,17 +51,31 @@ public class AuthService {
         // 유저의 OAuthAccessToken을 Redis에 저장
         redisService.save(key, oauthToken, oauthTokenResponse.getExpiresIn());
 
+        Optional<User> userOptional = userRepository.findByLichessId(userAccount.getId());
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            log.info("이미 존재하는 사용자입니다. Lichess ID: {}", userAccount.getId());
+            String accessToken = jwtService.generateAccessToken(res, user);
+            String refreshToken = jwtService.generateRefreshToken(res, user);
 
-        User user = User.builder()
+            return LoginResponse.builder()
+                    .type("Bearer")
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .build();
+        }
+
+        User newUser = User.builder()
                 .lichessId(userAccount.getId())
                 .name(userAccount.getUsername())
                 .role(Role.USER)
+                .banner(BannerType.TESTBANNER)
                 .build();
-        userRepository.save(user);
+        userRepository.save(newUser);
 
 
-        String accessToken = jwtService.generateAccessToken(res, user);
-        String refreshToken = jwtService.generateRefreshToken(res, user);
+        String accessToken = jwtService.generateAccessToken(res, newUser);
+        String refreshToken = jwtService.generateRefreshToken(res, newUser);
 
         return LoginResponse.builder()
                 .type("Bearer")

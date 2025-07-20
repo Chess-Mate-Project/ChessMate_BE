@@ -2,14 +2,12 @@ package backend.chessmate.global.user.dto.response.tier;
 
 import backend.chessmate.global.user.entity.SubTierType;
 import backend.chessmate.global.user.entity.TierType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class TierResult {
     private TierType tier;

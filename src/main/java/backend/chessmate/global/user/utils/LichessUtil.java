@@ -39,11 +39,6 @@ public class LichessUtil {
     @Value("${lichess.base-url}")
     private String baseUrl;
 
-    @Value("${lichess.ttl.account}")
-    private long acctountTTL;
-
-    @Value("${spring.data.redis.key.games_key_base}")
-    private String REDIS_GAMES_KEY;
 
 
     public LichessUtil(RedisService redisService) {

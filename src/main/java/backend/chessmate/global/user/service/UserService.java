@@ -211,7 +211,6 @@ public class UserService {
 
         }
         List<UserStreak> userStreaks = new ArrayList<>(streakMap.values());
-
         userStreaks.sort(Comparator.comparing(UserStreak::getDate));
 
         for (UserStreak streak : userStreaks) {

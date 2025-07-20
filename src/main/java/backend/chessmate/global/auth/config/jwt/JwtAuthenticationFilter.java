@@ -26,7 +26,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         String uri = request.getRequestURI();//요청 경로 추출하기
 
-        if(uri.startsWith("/api/auth/login")) { //해당 경로 요청이면 필터 생략
+        if (uri.startsWith("/api/auth/login") ||
+                uri.contains("/swagger-ui") ||
+                uri.startsWith("/v3/api-docs") ||
+                uri.startsWith("/swagger-resources")) {
+
             chain.doFilter(request, response);
             return;
         }
