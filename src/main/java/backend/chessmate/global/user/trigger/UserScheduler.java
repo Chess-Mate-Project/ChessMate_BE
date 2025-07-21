@@ -2,10 +2,11 @@ package backend.chessmate.global.user.trigger;
 
 import backend.chessmate.global.auth.entity.User;
 import backend.chessmate.global.auth.repository.UserRepository;
-import backend.chessmate.global.config.RedisService;
+import backend.chessmate.global.config.redis.RedisService;
 import backend.chessmate.global.user.dto.api.UserGame;
 import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.dto.api.UserPerf;
+import backend.chessmate.global.user.dto.response.GamesInUserInfo;
 import backend.chessmate.global.user.dto.response.UserPerfResponse;
 import backend.chessmate.global.user.entity.GameType;
 import backend.chessmate.global.user.entity.Streak;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 
@@ -58,7 +60,7 @@ public class UserScheduler {
 
 
 
-    //유저의 스트릭을 매일 1시에 업데이트하여 제공
+    //유저의 스트릭을 매일 1시에 업데이트
     //todo : 비동기 처리가 필요함.
     @Scheduled(cron = "0 0 1 * * *")
     public void updateUserStreak() {
@@ -129,11 +131,6 @@ public class UserScheduler {
                 log.info("Perf 정보 업데이트 | 유저이름 - {} | 게임 타입 - {}", user.getName(), gameType);
                 String key = REDIS_PERF_KEY_BASE + ":" + gameType + ":" + user.getLichessId();
 
-                if (redisService.hasKey(key)) {
-                    log.info("Redis에 퍼포먼스 정보가 존재합니다. key: {}", key);
-                    redisService.delete(key);
-                }
-
                 UserPerf perf = lichessUtil.callUserPerfApi(user, gameType);
                 UserPerfResponse response = UserPerfResponse.from(perf, tierUtil);
 
@@ -143,6 +140,66 @@ public class UserScheduler {
         }
     }
 
+    //1시간을 간격으로 사용자의 한달 치 게임 정보를 레디스에 업데이트 (사용자 선호 첫 수 - 사용 횟수, 사용자 선호 오프닝 - 사용 횟수)
+    //todo : 비동기 처리 필요
+    public void updateUserGamesInfo() {
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            log.info("Games 정보 업데이트 | 유저이름 - {}", user.getName());
+            String key = REDIS_GAMES_KEY_BASE + ":" + user.getLichessId();
+
+            long until = LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            long since = LocalDateTime.now().minusMonths(1).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            UserGames games = lichessUtil.callUserGamesApi(user, since, until);
+
+
+            Map<String, Long> openingMap = new HashMap<>();
+            Map<String, Long> firstMoveMap = new HashMap<>();
+            for (UserGame game : games.getGames()) {
+                if (game.getOpening() != null && game.getOpening().getName() != null) {
+                    String opening = game.getOpening().getName();
+                    if (opening.contains(":")) {
+                        opening = opening.split(":")[0].trim();
+                    }
+                    openingMap.merge(opening, 1L, Long::sum);
+                }
+
+                String moves = game.getMoves();
+                if (moves != null && !moves.isEmpty()) {
+                    String firstMove = moves.split(" ")[0];
+                    firstMoveMap.merge(firstMove, 1L, Long::sum);
+                }
+            }
+
+            log.info("openingMap 초기값: {}", openingMap);
+            log.info("firstMoveMap 초기값: {}", firstMoveMap);
+
+            String opening = openingMap.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey)
+                    .orElse("N/A");
+
+            int openingCount = openingMap.getOrDefault(opening, 0L).intValue();
+
+            String firstMove = firstMoveMap.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey)
+                    .orElse("N/A");
+
+            int firstMoveCount = firstMoveMap.getOrDefault(firstMove, 0L).intValue();
+
+
+            GamesInUserInfo userInfo = GamesInUserInfo.builder()
+                    .opening(opening)
+                    .openingCount(openingCount)
+                    .firstMove(firstMove)
+                    .firstMoveCount(firstMoveCount)
+                    .build();
+
+            redisService.save(key, userInfo, gamesTTL);
+
+        }
+    }
 
 
 

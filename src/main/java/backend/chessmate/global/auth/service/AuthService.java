@@ -8,7 +8,7 @@ import backend.chessmate.global.auth.dto.response.OAuthAccessTokenResponse;
 import backend.chessmate.global.auth.entity.Role;
 import backend.chessmate.global.auth.entity.User;
 import backend.chessmate.global.auth.repository.UserRepository;
-import backend.chessmate.global.config.RedisService;
+import backend.chessmate.global.config.redis.RedisService;
 import backend.chessmate.global.user.dto.api.UserAccount;
 import backend.chessmate.global.user.entity.BannerType;
 import backend.chessmate.global.user.service.UserService;

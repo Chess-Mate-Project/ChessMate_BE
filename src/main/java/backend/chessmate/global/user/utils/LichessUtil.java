@@ -8,7 +8,7 @@ import backend.chessmate.global.common.code.AuthErrorCode;
 import backend.chessmate.global.common.code.UserErrorCode;
 import backend.chessmate.global.common.exception.AuthException;
 import backend.chessmate.global.common.exception.UserException;
-import backend.chessmate.global.config.RedisService;
+import backend.chessmate.global.config.redis.RedisService;
 import backend.chessmate.global.user.dto.api.UserGame;
 import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.dto.api.UserPerf;
@@ -19,10 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
-
-import java.time.LocalDateTime;
 
 @Slf4j
 @Component

@@ -2,7 +2,7 @@ package backend.chessmate.global.user.service;
 
 import backend.chessmate.global.auth.config.UserPrincipal;
 import backend.chessmate.global.auth.entity.User;
-import backend.chessmate.global.config.RedisService;
+import backend.chessmate.global.config.redis.RedisService;
 import backend.chessmate.global.user.dto.api.UserGame;
 import backend.chessmate.global.user.dto.api.UserGames;
 import backend.chessmate.global.user.dto.response.*;
@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -72,7 +71,7 @@ public class UserService {
     }
 
 
-    public GamesInUserInfo processUserGamesInUserInfo(UserPrincipal u) {
+    public GamesInUserInfo processUserGamesInfo(UserPrincipal u) {
         log.info("==== getUserGames 호출됨 ====");
         User user = u.getUser();
 
@@ -107,7 +106,6 @@ public class UserService {
         }
 
         log.info("openingMap 초기값: {}", openingMap);
-
         log.info("firstMoveMap 초기값: {}", firstMoveMap);
 
         String opening = openingMap.entrySet().stream()
@@ -228,8 +226,14 @@ public class UserService {
     public UserInfoResponse getUserInfo(UserPrincipal u) {
         User user = u.getUser();
 
-        GamesInUserInfo gamesInUserInfo = processUserGamesInUserInfo(u);
+        String key = REDIS_GAMES_KEY_BASE + ":" + user.getLichessId();
 
+        GamesInUserInfo gamesInUserInfo = null;
+        if (redisService.hasKey(key)) {
+            gamesInUserInfo = redisService.get(key, GamesInUserInfo.class);
+        } else {
+            gamesInUserInfo = processUserGamesInfo(u);
+        }
 
         return UserInfoResponse.builder()
                 .userName(user.getLichessId())

@@ -1,4 +1,4 @@
-package backend.chessmate.global.config;
+package backend.chessmate.global.config.redis;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
