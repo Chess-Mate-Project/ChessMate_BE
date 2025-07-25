@@ -38,7 +38,7 @@ application:
 lichess:
   base-url: https://lichess.org
   client-id: abc123def456
-  redirect-url: http://localhost:3000/callback
+  redirect-url: http://localhost:3000/auth/callback
   ttl:
     account: 36000
     perf: 36000
