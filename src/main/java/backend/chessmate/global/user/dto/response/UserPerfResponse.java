@@ -6,6 +6,7 @@ import backend.chessmate.global.user.utils.TierUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
@@ -13,6 +14,7 @@ import java.util.Optional;
 @Builder
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class UserPerfResponse {
 
     private TierResult nowTier;
