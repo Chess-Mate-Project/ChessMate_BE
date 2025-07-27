@@ -84,5 +84,16 @@ public class AuthService {
                 .build();
     }
 
+    public void logout(User user, HttpServletResponse res) {
+        String lichessId = user.getLichessId();
+        String key = REDIS_OAUTH_KEY + ":" + lichessId;
+
+        // Redis에서 OAuth 토큰 삭제
+        redisService.delete(key);
+
+        // JWT 쿠키 삭제
+        jwtService.logout(user, res);
+    }
+
 
 }
