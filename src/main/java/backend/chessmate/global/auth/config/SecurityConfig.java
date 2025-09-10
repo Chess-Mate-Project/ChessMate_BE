@@ -31,7 +31,12 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
-                                "/api/auth/login"
+                                "/api/auth/login",
+
+                                // === Thymeleaf 프론트 컨트롤러 경로 ===
+                                "/",                // index 페이지
+                                "/login",           // Lichess 로그인 버튼 → OAuth redirect
+                                "/oauth/callback"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

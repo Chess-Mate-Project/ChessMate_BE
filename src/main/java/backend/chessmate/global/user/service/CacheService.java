@@ -52,7 +52,7 @@ public class CacheService {
     private final RedisService redisService;
     private final TierUtil tierUtil;
 
-    @Async
+    @Async("taskExecutor")
     public void userGamesCache(User user) {
         LocalDate targetDate = LocalDate.now().minusDays(1); // 어제 날짜 기준으로만 수집
         long since = targetDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -105,7 +105,7 @@ public class CacheService {
         }
     }
 
-    @Async
+    @Async("taskExecutor")
     public void userPerfCache(User user) {
         List<GameType> gameTypes = Arrays.asList(GameType.BULLET, GameType.BLITZ, GameType.RAPID, GameType.CLASSICAL);
         for (int i = 0 ; i < 4 ; i++) {
@@ -121,7 +121,7 @@ public class CacheService {
 
     }
 
-    @Async
+    @Async("taskExecutor")
     public void userGamesInfo(User user) {
         log.info("Games 정보 업데이트 | 유저이름 - {}", user.getName());
         String key = REDIS_GAMES_KEY_BASE + ":" + user.getLichessId();

@@ -29,14 +29,19 @@
             if (uri.startsWith("/api/auth/login") ||
                     uri.contains("/swagger-ui") ||
                     uri.startsWith("/v3/api-docs") ||
-                    uri.startsWith("/swagger-resources")) {
-
+                    uri.startsWith("/swagger-resources")
+            ) {
                 chain.doFilter(request, response);
                 return;
             }
 
-            String accessToken = jwtService.resolveToken(request, JwtRule.ACCESS_PREFIX); // 쿠키에서 엑세스 토큰 추출
 
+            String accessToken = jwtService.resolveToken(request, JwtRule.ACCESS_PREFIX); // 쿠키에서 엑세스 토큰 추출
+            if (accessToken == null || accessToken.isBlank()) {
+                log.debug("요청에 액세스 토큰 없음: {}", uri);
+                chain.doFilter(request, response);
+                return;
+            }
 
             if (jwtService.validateAccessToken(accessToken)) { //엑세스 토큰 검증
                 SecurityContextHolder.getContext().setAuthentication( // 엑세스 토큰으로 인증 객체 설정
@@ -55,7 +60,7 @@
                     .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다.")); //리프레시 토큰으로 인증 객체에서 lichessId 추출 후 사용자 조회
 
 
-            if (jwtService.validateAccessToken(refreshToken)) { //리프레시 토큰 검증
+            if (jwtService.validateRefreshToken(refreshToken, lichessId)) { //리프레시 토큰 검증
                 String newAccessToken = jwtService.generateAccessToken(response, user);// 새로운 엑세스 토큰 발급
 
                 jwtService.generateRefreshToken(response, user); //새로운 리프레쉬 토큰 발급(발급 시 자동 레디스 저장) - RTR(Rotate-Refresh-Token) 이라고 함
