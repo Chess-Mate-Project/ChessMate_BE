@@ -3,7 +3,6 @@ package backend.chessmate.global.auth.service;
 
 import backend.chessmate.global.auth.config.jwt.JwtService;
 import backend.chessmate.global.auth.dto.request.OAuthValueRequest;
-import backend.chessmate.global.auth.dto.response.LoginResponse;
 import backend.chessmate.global.auth.dto.response.OAuthAccessTokenResponse;
 import backend.chessmate.global.auth.entity.Role;
 import backend.chessmate.global.auth.entity.User;
@@ -38,7 +37,7 @@ public class AuthService {
     private String REDIS_OAUTH_KEY;
 
 
-    public LoginResponse login(OAuthValueRequest request, HttpServletResponse res) {
+    public void login(OAuthValueRequest request, HttpServletResponse res) {
 
         OAuthAccessTokenResponse oauthTokenResponse = lichessutil.getOAuthAccessToken(request);
         String oauthToken = oauthTokenResponse.getAccessToken();
@@ -57,12 +56,7 @@ public class AuthService {
             log.info("이미 존재하는 사용자입니다. Lichess ID: {}", userAccount.getId());
             String accessToken = jwtService.generateAccessToken(res, user);
             String refreshToken = jwtService.generateRefreshToken(res, user);
-
-            return LoginResponse.builder()
-                    .type("Bearer")
-                    .accessToken(accessToken)
-                    .refreshToken(refreshToken)
-                    .build();
+            return;
         }
 
         User newUser = User.builder()
@@ -77,11 +71,6 @@ public class AuthService {
         String accessToken = jwtService.generateAccessToken(res, newUser);
         String refreshToken = jwtService.generateRefreshToken(res, newUser);
 
-        return LoginResponse.builder()
-                .type("Bearer")
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
     }
 
     public void logout(User user, HttpServletResponse res) {

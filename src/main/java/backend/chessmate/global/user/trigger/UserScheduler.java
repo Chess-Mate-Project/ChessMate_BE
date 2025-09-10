@@ -15,6 +15,7 @@ import backend.chessmate.global.user.service.CacheService;
 import backend.chessmate.global.user.utils.LichessUtil;
 import backend.chessmate.global.user.utils.TierUtil;
 import backend.chessmate.global.user.utils.UserGamesUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,6 +30,7 @@ import java.util.*;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class UserScheduler {
 
     @Value("${spring.data.redis.key.perf_key_base}")
@@ -44,27 +46,10 @@ public class UserScheduler {
     private long gamesTTL;
 
     private final UserRepository userRepository;
-    private final LichessUtil lichessUtil;
-    private final StreaksRepository streaksRepository;
-    private final UserGamesUtil userGamesUtil;
-    private final RedisService redisService;
-    private final TierUtil tierUtil;
     private final CacheService cacheService;
-
-    public UserScheduler(UserRepository userRepository, LichessUtil lichessUtil, StreaksRepository streaksRepository, UserGamesUtil userGamesUtil, RedisService redisService, TierUtil tierUtil, CacheService cacheService) {
-        this.userRepository = userRepository;
-        this.lichessUtil = lichessUtil;
-        this.streaksRepository = streaksRepository;
-        this.userGamesUtil = userGamesUtil;
-        this.redisService = redisService;
-        this.tierUtil = tierUtil;
-        this.cacheService = cacheService;
-    }
-
 
 
     //유저의 스트릭을 매일 1시에 업데이트
-    //todo : 비동기 처리가 필요함. - 처리함
     @Scheduled(cron = "0 0 1 * * *")
     public void updateUserStreak() {
 
@@ -75,7 +60,6 @@ public class UserScheduler {
     }
 
     //1시간을 간격으로 사용자의 각 게임 타입별 퍼포먼스를 레디스에 업데이트
-    //todo : 비동기 처리 필요
     @Scheduled(cron = "0 0 * * * *")
     public void updateUserPerf() {
 
@@ -86,7 +70,6 @@ public class UserScheduler {
     }
 
     //1시간을 간격으로 사용자의 한달 치 게임 정보를 레디스에 업데이트 (사용자 선호 첫 수 - 사용 횟수, 사용자 선호 오프닝 - 사용 횟수)
-    //todo : 비동기 처리 필요
     @Scheduled(cron = "0 0 * * * *")
     public void updateUserGamesInfo() {
         List<User> users = userRepository.findAll();

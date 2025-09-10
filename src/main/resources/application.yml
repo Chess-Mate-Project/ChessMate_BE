@@ -37,7 +37,7 @@ application:
 
 lichess:
   base-url: https://lichess.org
-  client-id: abc123def456
+  client-id: chessmate9@8y612
   redirect-url: http://localhost:5173/auth/callback
   ttl:
     account: 36000
